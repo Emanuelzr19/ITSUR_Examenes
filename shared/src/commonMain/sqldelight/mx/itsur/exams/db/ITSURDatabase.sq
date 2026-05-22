@@ -1,0 +1,164 @@
+CREATE TABLE alumno (
+    id TEXT NOT NULL PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    email TEXT NOT NULL,
+    numero_control TEXT NOT NULL,
+    grupo TEXT NOT NULL,
+    rol TEXT NOT NULL DEFAULT 'ALUMNO',
+    password_hash TEXT NOT NULL,
+    fecha_registro INTEGER NOT NULL
+);
+
+CREATE TABLE examen (
+    id TEXT NOT NULL PRIMARY KEY,
+    titulo TEXT NOT NULL,
+    descripcion TEXT NOT NULL,
+    duracion_minutos INTEGER NOT NULL,
+    fecha_creacion INTEGER NOT NULL,
+    creado_por TEXT NOT NULL,
+    activo INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE pregunta (
+    id TEXT NOT NULL PRIMARY KEY,
+    examen_id TEXT NOT NULL,
+    texto TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    puntaje REAL NOT NULL,
+    orden INTEGER NOT NULL,
+    FOREIGN KEY (examen_id) REFERENCES examen(id) ON DELETE CASCADE
+);
+
+CREATE TABLE opcion (
+    id TEXT NOT NULL PRIMARY KEY,
+    pregunta_id TEXT NOT NULL,
+    texto TEXT NOT NULL,
+    es_correcta INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (pregunta_id) REFERENCES pregunta(id) ON DELETE CASCADE
+);
+
+CREATE TABLE resultado (
+    id TEXT NOT NULL PRIMARY KEY,
+    alumno_id TEXT NOT NULL,
+    examen_id TEXT NOT NULL,
+    calificacion REAL NOT NULL,
+    tiempo_usado_segundos INTEGER NOT NULL,
+    fecha_aplicacion INTEGER NOT NULL,
+    FOREIGN KEY (alumno_id) REFERENCES alumno(id),
+    FOREIGN KEY (examen_id) REFERENCES examen(id)
+);
+
+CREATE TABLE respuesta_alumno (
+    id TEXT NOT NULL PRIMARY KEY,
+    resultado_id TEXT NOT NULL,
+    pregunta_id TEXT NOT NULL,
+    opcion_seleccionada_id TEXT,
+    respuesta_texto TEXT,
+    es_correcta INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (resultado_id) REFERENCES resultado(id) ON DELETE CASCADE
+);
+
+-- Queries para alumno
+selectAllAlumnos:
+SELECT * FROM alumno WHERE rol = 'ALUMNO' ORDER BY nombre;
+
+selectAlumnoById:
+SELECT * FROM alumno WHERE id = ?;
+
+selectAlumnoByEmail:
+SELECT * FROM alumno WHERE email = ?;
+
+insertAlumno:
+INSERT INTO alumno(id, nombre, email, numero_control, grupo, rol, password_hash, fecha_registro)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+updateAlumno:
+UPDATE alumno SET nombre = ?, email = ?, numero_control = ?, grupo = ? WHERE id = ?;
+
+deleteAlumno:
+DELETE FROM alumno WHERE id = ?;
+
+countAlumnos:
+SELECT COUNT(*) FROM alumno WHERE rol = 'ALUMNO';
+
+-- Queries para examen
+selectAllExamenes:
+SELECT * FROM examen ORDER BY fecha_creacion DESC;
+
+selectExamenById:
+SELECT * FROM examen WHERE id = ?;
+
+selectExamenesActivos:
+SELECT * FROM examen WHERE activo = 1 ORDER BY fecha_creacion DESC;
+
+insertExamen:
+INSERT INTO examen(id, titulo, descripcion, duracion_minutos, fecha_creacion, creado_por, activo)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+updateExamen:
+UPDATE examen SET titulo = ?, descripcion = ?, duracion_minutos = ?, activo = ? WHERE id = ?;
+
+deleteExamen:
+DELETE FROM examen WHERE id = ?;
+
+-- Queries para pregunta
+selectPreguntasByExamen:
+SELECT * FROM pregunta WHERE examen_id = ? ORDER BY orden;
+
+insertPregunta:
+INSERT INTO pregunta(id, examen_id, texto, tipo, puntaje, orden)
+VALUES (?, ?, ?, ?, ?, ?);
+
+deletePreguntasByExamen:
+DELETE FROM pregunta WHERE examen_id = ?;
+
+-- Queries para opcion
+selectOpcionesByPregunta:
+SELECT * FROM opcion WHERE pregunta_id = ?;
+
+insertOpcion:
+INSERT INTO opcion(id, pregunta_id, texto, es_correcta)
+VALUES (?, ?, ?, ?);
+
+deleteOpcionesByPregunta:
+DELETE FROM opcion WHERE pregunta_id = ?;
+
+-- Queries para resultado
+selectResultadosByAlumno:
+SELECT r.*, e.titulo AS examen_titulo
+FROM resultado r
+JOIN examen e ON r.examen_id = e.id
+WHERE r.alumno_id = ?
+ORDER BY r.fecha_aplicacion DESC;
+
+selectResultadosByExamen:
+SELECT r.*, a.nombre AS alumno_nombre, a.numero_control
+FROM resultado r
+JOIN alumno a ON r.alumno_id = a.id
+WHERE r.examen_id = ?
+ORDER BY r.calificacion DESC;
+
+selectResultadoById:
+SELECT * FROM resultado WHERE id = ?;
+
+insertResultado:
+INSERT INTO resultado(id, alumno_id, examen_id, calificacion, tiempo_usado_segundos, fecha_aplicacion)
+VALUES (?, ?, ?, ?, ?, ?);
+
+alumnoYaTomoPrueba:
+SELECT COUNT(*) FROM resultado WHERE alumno_id = ? AND examen_id = ?;
+
+-- Queries para respuesta_alumno
+selectRespuestasByResultado:
+SELECT * FROM respuesta_alumno WHERE resultado_id = ?;
+
+insertRespuestaAlumno:
+INSERT INTO respuesta_alumno(id, resultado_id, pregunta_id, opcion_seleccionada_id, respuesta_texto, es_correcta)
+VALUES (?, ?, ?, ?, ?, ?);
+
+-- Estadísticas generales
+promedioCalificacionExamen:
+SELECT AVG(calificacion) AS promedio FROM resultado WHERE examen_id = ?;
+
+countResultadosByExamen:
+SELECT COUNT(*) FROM resultado WHERE examen_id = ?;
