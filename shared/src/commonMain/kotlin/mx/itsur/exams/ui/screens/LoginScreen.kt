@@ -3,12 +3,16 @@ package mx.itsur.exams.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,6 +38,12 @@ class LoginScreen : Screen {
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var errorMsg by remember { mutableStateOf("") }
+
+        val canLogin = state !is LoginState.Loading && email.isNotBlank() && password.isNotBlank()
+
+        fun doLogin() {
+            if (canLogin) viewModel.login(email, password)
+        }
 
         LaunchedEffect(state) {
             when (val s = state) {
@@ -106,14 +116,18 @@ class LoginScreen : Screen {
                         ITSURTextField(
                             value = email,
                             onValueChange = { email = it; errorMsg = "" },
-                            label = "Correo institucional"
+                            label = "Correo institucional",
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = ITSURVerde) },
+                            onKeyEnter = { doLogin() }
                         )
                         Spacer(Modifier.height(14.dp))
                         ITSURTextField(
                             value = password,
                             onValueChange = { password = it; errorMsg = "" },
                             label = "Contraseña",
-                            isPassword = true
+                            isPassword = true,
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = ITSURVerde) },
+                            onKeyEnter = { doLogin() }
                         )
 
                         if (errorMsg.isNotEmpty()) {
@@ -129,9 +143,9 @@ class LoginScreen : Screen {
                         Spacer(Modifier.height(24.dp))
                         ITSURButton(
                             text = if (state is LoginState.Loading) "Ingresando..." else "Ingresar",
-                            onClick = { viewModel.login(email, password) },
+                            onClick = { doLogin() },
                             modifier = Modifier.fillMaxWidth().height(52.dp),
-                            enabled = state !is LoginState.Loading && email.isNotBlank() && password.isNotBlank()
+                            enabled = canLogin
                         )
 
                         Spacer(Modifier.height(16.dp))

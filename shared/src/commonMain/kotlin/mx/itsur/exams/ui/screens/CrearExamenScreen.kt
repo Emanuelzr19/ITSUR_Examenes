@@ -2,12 +2,12 @@ package mx.itsur.exams.ui.screens
 import mx.itsur.exams.util.currentTimeMs
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -107,7 +107,8 @@ data class CrearExamenScreen(val admin: Alumno, val examenId: String? = null) : 
                     ) {
                         Text("Preguntas (${preguntas.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         ITSURButton(
-                            text = "＋ Agregar",
+                            text = "Agregar",
+                            icon = Icons.Default.Add,
                             onClick = {
                                 preguntas = preguntas + PreguntaForm(
                                     id = generarId(),
@@ -146,6 +147,7 @@ data class CrearExamenScreen(val admin: Alumno, val examenId: String? = null) : 
                     Spacer(Modifier.height(8.dp))
                     ITSURButton(
                         text = if (state is FormState.Loading) "Guardando..." else "Guardar Examen",
+                        icon = Icons.Default.Save,
                         onClick = {
                             if (titulo.isBlank()) { errorMsg = "El título es requerido"; return@ITSURButton }
                             if (preguntas.isEmpty()) { errorMsg = "Agrega al menos una pregunta"; return@ITSURButton }
@@ -197,7 +199,9 @@ fun PreguntaEditor(numero: Int, form: PreguntaForm, onUpdate: (PreguntaForm) -> 
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Pregunta $numero", fontWeight = FontWeight.Bold, color = ITSURVerde)
-                IconButton(onClick = onDelete) { Text("✕", color = ITSURError, fontSize = 16.sp) }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Close, contentDescription = "Eliminar pregunta", tint = ITSURError)
+                }
             }
 
             ITSURTextField(
@@ -212,8 +216,33 @@ fun PreguntaEditor(numero: Int, form: PreguntaForm, onUpdate: (PreguntaForm) -> 
                 TipoPregunta.values().forEach { tipo ->
                     FilterChip(
                         selected = form.tipo == tipo,
-                        onClick = { onUpdate(form.copy(tipo = tipo)) },
-                        label = { Text(tipo.name.replace("_", " "), fontSize = 11.sp) },
+                        onClick = {
+                            // When switching to VERDADERO_FALSO, set exactly 2 options
+                            val nuevasOpciones = when (tipo) {
+                                TipoPregunta.VERDADERO_FALSO -> mutableListOf(
+                                    OpcionForm(generarId(), "Verdadero", true),
+                                    OpcionForm(generarId(), "Falso", false)
+                                )
+                                TipoPregunta.OPCION_MULTIPLE -> if (form.tipo == TipoPregunta.VERDADERO_FALSO || form.tipo == TipoPregunta.ABIERTA) mutableListOf(
+                                    OpcionForm(generarId(), "", false),
+                                    OpcionForm(generarId(), "", false),
+                                    OpcionForm(generarId(), "", true),
+                                    OpcionForm(generarId(), "", false)
+                                ) else form.opciones
+                                TipoPregunta.ABIERTA -> mutableListOf()
+                            }
+                            onUpdate(form.copy(tipo = tipo, opciones = nuevasOpciones))
+                        },
+                        label = {
+                            Text(
+                                when (tipo) {
+                                    TipoPregunta.OPCION_MULTIPLE -> "Opción múltiple"
+                                    TipoPregunta.VERDADERO_FALSO -> "Verdadero/Falso"
+                                    TipoPregunta.ABIERTA -> "Abierta"
+                                },
+                                fontSize = 11.sp
+                            )
+                        },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = ITSURVerde,
                             selectedLabelColor = Color.White
@@ -228,30 +257,64 @@ fun PreguntaEditor(numero: Int, form: PreguntaForm, onUpdate: (PreguntaForm) -> 
                 label = "Puntaje"
             )
 
-            if (form.tipo != TipoPregunta.ABIERTA) {
-                Text("Opciones (marca la correcta):", style = MaterialTheme.typography.labelLarge, color = ITSURGrisMedio)
-                form.opciones.forEachIndexed { i, opcion ->
+            when (form.tipo) {
+                TipoPregunta.ABIERTA -> {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = opcion.esCorrecta,
-                            onClick = {
-                                val nuevasOpciones = form.opciones.mapIndexed { j, o -> o.copy(esCorrecta = j == i) }.toMutableList()
-                                onUpdate(form.copy(opciones = nuevasOpciones))
-                            },
-                            colors = RadioButtonDefaults.colors(selectedColor = ITSURVerde)
+                        Icon(Icons.Default.Info, contentDescription = null, tint = ITSURGrisMedio, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "El alumno escribirá su respuesta libremente. Requiere revisión manual.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ITSURGrisMedio
                         )
-                        OutlinedTextField(
-                            value = opcion.texto,
-                            onValueChange = { nuevoTexto ->
-                                val nuevasOpciones = form.opciones.toMutableList().also { it[i] = opcion.copy(texto = nuevoTexto) }
-                                onUpdate(form.copy(opciones = nuevasOpciones))
-                            },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            placeholder = { Text("Opción ${i + 1}", color = ITSURGrisMedio) },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ITSURVerde)
-                        )
+                    }
+                }
+                TipoPregunta.VERDADERO_FALSO -> {
+                    Text("Marca la respuesta correcta:", style = MaterialTheme.typography.labelLarge, color = ITSURGrisMedio)
+                    form.opciones.forEachIndexed { i, opcion ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = opcion.esCorrecta,
+                                onClick = {
+                                    val nuevasOpciones = form.opciones.mapIndexed { j, o -> o.copy(esCorrecta = j == i) }.toMutableList()
+                                    onUpdate(form.copy(opciones = nuevasOpciones))
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = ITSURVerde)
+                            )
+                            Text(
+                                opcion.texto,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = if (opcion.esCorrecta) FontWeight.Bold else FontWeight.Normal,
+                                color = if (opcion.esCorrecta) ITSURVerdeOscuro else ITSURTexto
+                            )
+                        }
+                    }
+                }
+                TipoPregunta.OPCION_MULTIPLE -> {
+                    Text("Opciones (marca la correcta):", style = MaterialTheme.typography.labelLarge, color = ITSURGrisMedio)
+                    form.opciones.forEachIndexed { i, opcion ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = opcion.esCorrecta,
+                                onClick = {
+                                    val nuevasOpciones = form.opciones.mapIndexed { j, o -> o.copy(esCorrecta = j == i) }.toMutableList()
+                                    onUpdate(form.copy(opciones = nuevasOpciones))
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = ITSURVerde)
+                            )
+                            OutlinedTextField(
+                                value = opcion.texto,
+                                onValueChange = { nuevoTexto ->
+                                    val nuevasOpciones = form.opciones.toMutableList().also { it[i] = opcion.copy(texto = nuevoTexto) }
+                                    onUpdate(form.copy(opciones = nuevasOpciones))
+                                },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                placeholder = { Text("Opción ${i + 1}", color = ITSURGrisMedio) },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ITSURVerde)
+                            )
+                        }
                     }
                 }
             }

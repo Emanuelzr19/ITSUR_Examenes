@@ -37,34 +37,51 @@ class EliminarExamenUseCase(private val examenRepository: ExamenRepository) {
 }
 
 /**
- * Califica un examen comparando las respuestas del alumno con las opciones correctas
- * y calcula la calificación en escala de 0 a 10.
+ * Califica un examen. Las preguntas abiertas se guardan con su texto pero no se califican
+ * automáticamente (requieren revisión manual; no se penalizan).
  */
 class CalificarExamenUseCase {
-    operator fun invoke(examen: Examen, respuestasMap: Map<String, String?>): Pair<Float, List<RespuestaAlumno>> {
+    operator fun invoke(
+        examen: Examen,
+        respuestasMap: Map<String, String?>,
+        respuestasTextoMap: Map<String, String> = emptyMap()
+    ): Pair<Float, List<RespuestaAlumno>> {
         val resultadoId = generarId()
         var puntajeObtenido = 0f
-        val puntajeTotal = examen.preguntas.sumOf { it.puntaje.toDouble() }.toFloat()
+        // Solo preguntas no-abiertas cuentan para el total
+        val puntajeTotal = examen.preguntas
+            .filter { it.tipo != TipoPregunta.ABIERTA }
+            .sumOf { it.puntaje.toDouble() }
+            .toFloat()
 
         val respuestas = examen.preguntas.map { pregunta ->
-            val opcionSeleccionadaId = respuestasMap[pregunta.id]
-            val esCorrecta = when (pregunta.tipo) {
+            when (pregunta.tipo) {
                 TipoPregunta.OPCION_MULTIPLE, TipoPregunta.VERDADERO_FALSO -> {
+                    val opcionSeleccionadaId = respuestasMap[pregunta.id]
                     val correcta = pregunta.opciones.find { it.esCorrecta }
-                    opcionSeleccionadaId != null && opcionSeleccionadaId == correcta?.id
+                    val esCorrecta = opcionSeleccionadaId != null && opcionSeleccionadaId == correcta?.id
+                    if (esCorrecta) puntajeObtenido += pregunta.puntaje
+                    RespuestaAlumno(
+                        id = generarId(),
+                        resultadoId = resultadoId,
+                        preguntaId = pregunta.id,
+                        opcionSeleccionadaId = opcionSeleccionadaId,
+                        respuestaTexto = null,
+                        esCorrecta = esCorrecta
+                    )
                 }
-                TipoPregunta.ABIERTA -> false
+                TipoPregunta.ABIERTA -> {
+                    val texto = respuestasTextoMap[pregunta.id] ?: ""
+                    RespuestaAlumno(
+                        id = generarId(),
+                        resultadoId = resultadoId,
+                        preguntaId = pregunta.id,
+                        opcionSeleccionadaId = null,
+                        respuestaTexto = texto,
+                        esCorrecta = false  // Requiere revisión manual
+                    )
+                }
             }
-            if (esCorrecta) puntajeObtenido += pregunta.puntaje
-
-            RespuestaAlumno(
-                id = generarId(),
-                resultadoId = resultadoId,
-                preguntaId = pregunta.id,
-                opcionSeleccionadaId = opcionSeleccionadaId,
-                respuestaTexto = null,
-                esCorrecta = esCorrecta
-            )
         }
 
         val calificacion = if (puntajeTotal > 0) (puntajeObtenido / puntajeTotal) * 10f else 0f
@@ -81,6 +98,10 @@ class RegistrarAlumnoUseCase(private val alumnoRepository: AlumnoRepository) {
         val alumnoConHash = alumno.copy(passwordHash = hashPassword(password))
         alumnoRepository.insertAlumno(alumnoConHash)
     }
+}
+
+class ActualizarAlumnoUseCase(private val alumnoRepository: AlumnoRepository) {
+    suspend operator fun invoke(alumno: Alumno) = alumnoRepository.updateAlumno(alumno)
 }
 
 class EliminarAlumnoUseCase(private val alumnoRepository: AlumnoRepository) {

@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -50,7 +52,7 @@ data class DashboardAlumnoScreen(val alumno: Alumno) : Screen {
                 ) {
                     Column {
                         Text("ITSUR — Exámenes", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                        Text("Hola, ${alumno.nombre.split(" ").first()} 👋", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Hola, ${alumno.nombre.split(" ").first()}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
                         Text(alumno.grupo, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp)
                     }
                     ITSURLogo(56)
@@ -65,14 +67,16 @@ data class DashboardAlumnoScreen(val alumno: Alumno) : Screen {
                 ) {
                     Text("Mis Exámenes", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     TextButton(onClick = { navigator.push(MisResultadosScreen(alumno)) }) {
-                        Text("Ver resultados →", color = ITSURVerde, fontWeight = FontWeight.SemiBold)
+                        Icon(Icons.Default.Assessment, contentDescription = null, tint = ITSURVerde, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Ver resultados", color = ITSURVerde, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
                 if (isLoading) {
                     LoadingIndicator()
                 } else if (examenes.isEmpty()) {
-                    EmptyState(mensaje = "No hay exámenes disponibles.", emoji = "📚")
+                    EmptyState(mensaje = "No hay exámenes disponibles.", icon = Icons.Default.MenuBook)
                 } else {
                     LazyColumn(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
@@ -93,7 +97,11 @@ data class DashboardAlumnoScreen(val alumno: Alumno) : Screen {
                             TextButton(
                                 onClick = { navigator.replaceAll(LoginScreen()) },
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Cerrar sesión", color = ITSURGrisMedio) }
+                            ) {
+                                Icon(Icons.Default.Logout, contentDescription = null, tint = ITSURGrisMedio, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Cerrar sesión", color = ITSURGrisMedio)
+                            }
                         }
                     }
                 }
@@ -109,6 +117,7 @@ data class AplicarExamenScreen(val alumno: Alumno, val examenId: String) : Scree
         val viewModel = getScreenModel<AplicarExamenViewModel>()
         val examen by viewModel.examen.collectAsState()
         val respuestas by viewModel.respuestas.collectAsState()
+        val respuestasTexto by viewModel.respuestasTexto.collectAsState()
         val preguntaActual by viewModel.preguntaActual.collectAsState()
         val resultado by viewModel.resultado.collectAsState()
         val yaTomoPrueba by viewModel.yaTomoPrueba.collectAsState()
@@ -126,13 +135,13 @@ data class AplicarExamenScreen(val alumno: Alumno, val examenId: String) : Scree
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("⚠️", fontSize = 56.sp)
+                Icon(Icons.Default.Warning, contentDescription = null, tint = ITSURDorado, modifier = Modifier.size(64.dp))
                 Spacer(Modifier.height(16.dp))
                 Text("Ya realizaste este examen", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(8.dp))
                 Text("No puedes repetirlo.", color = ITSURGrisMedio, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(24.dp))
-                ITSURButton(text = "Regresar", onClick = { navigator.pop() })
+                ITSURButton(text = "Regresar", icon = Icons.Default.ArrowBack, onClick = { navigator.pop() })
             }
             return
         }
@@ -175,37 +184,75 @@ data class AplicarExamenScreen(val alumno: Alumno, val examenId: String) : Scree
                         }
                     }
 
-                    if (pregunta.tipo != TipoPregunta.ABIERTA) {
-                        items(pregunta.opciones) { opcion ->
-                            val isSelected = respuestas[pregunta.id] == opcion.id
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(
-                                    if (isSelected) ITSURVerde else Color.White
-                                ),
-                                elevation = CardDefaults.cardElevation(if (isSelected) 4.dp else 1.dp),
-                                onClick = { viewModel.seleccionarRespuesta(pregunta.id, opcion.id) }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                    when (pregunta.tipo) {
+                        TipoPregunta.OPCION_MULTIPLE, TipoPregunta.VERDADERO_FALSO -> {
+                            items(pregunta.opciones) { opcion ->
+                                val isSelected = respuestas[pregunta.id] == opcion.id
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(
+                                        if (isSelected) ITSURVerde else Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(if (isSelected) 4.dp else 1.dp),
+                                    onClick = { viewModel.seleccionarRespuesta(pregunta.id, opcion.id) }
                                 ) {
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = { viewModel.seleccionarRespuesta(pregunta.id, opcion.id) },
-                                        colors = RadioButtonDefaults.colors(
-                                            selectedColor = Color.White,
-                                            unselectedColor = ITSURGrisMedio
+                                    Row(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = isSelected,
+                                            onClick = { viewModel.seleccionarRespuesta(pregunta.id, opcion.id) },
+                                            colors = RadioButtonDefaults.colors(
+                                                selectedColor = Color.White,
+                                                unselectedColor = ITSURGrisMedio
+                                            )
                                         )
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        opcion.texto,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = if (isSelected) Color.White else ITSURTexto,
-                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                                    )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            opcion.texto,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = if (isSelected) Color.White else ITSURTexto,
+                                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        TipoPregunta.ABIERTA -> {
+                            item {
+                                Card(
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(Color.White),
+                                    elevation = CardDefaults.cardElevation(1.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = ITSURVerde, modifier = Modifier.size(18.dp))
+                                            Spacer(Modifier.width(6.dp))
+                                            Text("Escribe tu respuesta:", style = MaterialTheme.typography.labelLarge, color = ITSURGrisMedio)
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        OutlinedTextField(
+                                            value = respuestasTexto[pregunta.id] ?: "",
+                                            onValueChange = { viewModel.escribirRespuestaAbierta(pregunta.id, it) },
+                                            modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
+                                            placeholder = { Text("Escribe aquí tu respuesta...", color = ITSURGrisMedio) },
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = ITSURVerde,
+                                                cursorColor = ITSURVerde
+                                            ),
+                                            maxLines = 8
+                                        )
+                                        Spacer(Modifier.height(6.dp))
+                                        Text(
+                                            "Esta pregunta será revisada por el docente.",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = ITSURGrisMedio
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -221,7 +268,8 @@ data class AplicarExamenScreen(val alumno: Alumno, val examenId: String) : Scree
                 ) {
                     if (preguntaActual > 0) {
                         ITSURButton(
-                            text = "← Anterior",
+                            text = "Anterior",
+                            icon = Icons.Default.ArrowBack,
                             onClick = { viewModel.preguntaAnterior() },
                             modifier = Modifier.weight(1f),
                             secondary = true
@@ -229,13 +277,15 @@ data class AplicarExamenScreen(val alumno: Alumno, val examenId: String) : Scree
                     }
                     if (preguntaActual < preguntas.size - 1) {
                         ITSURButton(
-                            text = "Siguiente →",
+                            text = "Siguiente",
+                            icon = Icons.Default.ArrowForward,
                             onClick = { viewModel.siguientePregunta() },
                             modifier = Modifier.weight(1f)
                         )
                     } else {
                         ITSURButton(
-                            text = "Finalizar examen ✓",
+                            text = "Finalizar examen",
+                            icon = Icons.Default.CheckCircle,
                             onClick = { viewModel.finalizarExamen(alumno) },
                             modifier = Modifier.weight(1f)
                         )
@@ -256,12 +306,20 @@ fun ResultadoFinalScreen(resultado: mx.itsur.exams.domain.model.Resultado, alumn
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(if (aprobado) ITSURVerdeOscuro else ITSURError, if (aprobado) ITSURVerde else ITSURError.copy(alpha = 0.7f))))
+                .background(Brush.verticalGradient(listOf(
+                    if (aprobado) ITSURVerdeOscuro else ITSURError,
+                    if (aprobado) ITSURVerde else ITSURError.copy(alpha = 0.7f)
+                )))
                 .padding(40.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(if (aprobado) "🎉" else "📚", fontSize = 52.sp)
+                Icon(
+                    if (aprobado) Icons.Default.EmojiEvents else Icons.Default.MenuBook,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(64.dp)
+                )
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = resultado.calificacion.format1f(),
@@ -299,7 +357,12 @@ fun ResultadoFinalScreen(resultado: mx.itsur.exams.domain.model.Resultado, alumn
             }
             item {
                 Spacer(Modifier.height(8.dp))
-                ITSURButton(text = "Volver al inicio", onClick = onVolver, modifier = Modifier.fillMaxWidth().height(52.dp))
+                ITSURButton(
+                    text = "Volver al inicio",
+                    icon = Icons.Default.Home,
+                    onClick = onVolver,
+                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                )
             }
         }
     }
@@ -321,7 +384,7 @@ data class MisResultadosScreen(val alumno: Alumno) : Screen {
             if (isLoading) {
                 LoadingIndicator()
             } else if (resultados.isEmpty()) {
-                EmptyState(mensaje = "Aún no has realizado ningún examen.", emoji = "📋")
+                EmptyState(mensaje = "Aún no has realizado ningún examen.", icon = Icons.Default.Assignment)
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),

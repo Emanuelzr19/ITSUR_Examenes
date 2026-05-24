@@ -109,6 +109,10 @@ class AplicarExamenViewModel(
     private val _respuestas = MutableStateFlow<Map<String, String?>>(emptyMap())
     val respuestas: StateFlow<Map<String, String?>> = _respuestas.asStateFlow()
 
+    // Map for open-text answers: preguntaId -> texto
+    private val _respuestasTexto = MutableStateFlow<Map<String, String>>(emptyMap())
+    val respuestasTexto: StateFlow<Map<String, String>> = _respuestasTexto.asStateFlow()
+
     private val _preguntaActual = MutableStateFlow(0)
     val preguntaActual: StateFlow<Int> = _preguntaActual.asStateFlow()
 
@@ -132,6 +136,10 @@ class AplicarExamenViewModel(
         _respuestas.value = _respuestas.value.toMutableMap().apply { put(preguntaId, opcionId) }
     }
 
+    fun escribirRespuestaAbierta(preguntaId: String, texto: String) {
+        _respuestasTexto.value = _respuestasTexto.value.toMutableMap().apply { put(preguntaId, texto) }
+    }
+
     fun siguientePregunta() {
         val total = _examen.value?.preguntas?.size ?: 0
         if (_preguntaActual.value < total - 1) _preguntaActual.value++
@@ -145,7 +153,7 @@ class AplicarExamenViewModel(
         screenModelScope.launch {
             val examen = _examen.value ?: return@launch
             val tiempoUsado = (currentTimeMs() / 1000 - tiempoInicioSegundos).toInt()
-            val (calificacion, respuestas) = calificarUseCase(examen, _respuestas.value)
+            val (calificacion, respuestas) = calificarUseCase(examen, _respuestas.value, _respuestasTexto.value)
             val resultadoId = generarId()
             val resultado = Resultado(
                 id = resultadoId,
@@ -166,7 +174,8 @@ class AplicarExamenViewModel(
 class AlumnoListViewModel(
     private val getAlumnosUseCase: GetAlumnosUseCase,
     private val registrarAlumnoUseCase: RegistrarAlumnoUseCase,
-    private val eliminarAlumnoUseCase: EliminarAlumnoUseCase
+    private val eliminarAlumnoUseCase: EliminarAlumnoUseCase,
+    private val actualizarAlumnoUseCase: ActualizarAlumnoUseCase
 ) : ScreenModel {
     private val _alumnos = MutableStateFlow<List<Alumno>>(emptyList())
     val alumnos: StateFlow<List<Alumno>> = _alumnos.asStateFlow()
@@ -184,6 +193,13 @@ class AlumnoListViewModel(
     fun registrar(alumno: Alumno, password: String) {
         screenModelScope.launch {
             registrarAlumnoUseCase(alumno, password)
+            loadAlumnos()
+        }
+    }
+
+    fun actualizar(alumno: Alumno) {
+        screenModelScope.launch {
+            actualizarAlumnoUseCase(alumno)
             loadAlumnos()
         }
     }

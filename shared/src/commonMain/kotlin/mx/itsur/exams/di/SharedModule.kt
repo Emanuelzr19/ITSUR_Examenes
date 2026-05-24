@@ -24,6 +24,7 @@ val sharedModule = module {
     factory { CalificarExamenUseCase() }
     factory { GetAlumnosUseCase(get<AlumnoRepositoryImpl>()) }
     factory { RegistrarAlumnoUseCase(get<AlumnoRepositoryImpl>()) }
+    factory { ActualizarAlumnoUseCase(get<AlumnoRepositoryImpl>()) }
     factory { EliminarAlumnoUseCase(get<AlumnoRepositoryImpl>()) }
     factory { GetResultadosByAlumnoUseCase(get<ResultadoRepositoryImpl>()) }
     factory { GetResultadosByExamenUseCase(get<ResultadoRepositoryImpl>()) }
@@ -34,6 +35,6 @@ val sharedModule = module {
     factory { ExamenListViewModel(get(), get()) }
     factory { CrearExamenViewModel(get(), get(), get()) }
     factory { AplicarExamenViewModel(get(), get(), get(), get()) }
-    factory { AlumnoListViewModel(get(), get(), get()) }
+    factory { AlumnoListViewModel(get(), get(), get(), get()) }
     factory { ReportesViewModel(get(), get(), get()) }
 }

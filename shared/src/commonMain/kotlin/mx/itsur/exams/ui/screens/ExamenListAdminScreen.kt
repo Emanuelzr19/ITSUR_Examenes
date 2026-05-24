@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -36,7 +38,7 @@ data class ExamenListAdminScreen(val admin: Alumno) : Screen {
                 onBackClick = { navigator.pop() },
                 actions = {
                     IconButton(onClick = { navigator.push(CrearExamenScreen(admin)) }) {
-                        Text("＋", color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                        Icon(Icons.Default.Add, contentDescription = "Nuevo examen", tint = Color.White)
                     }
                 }
             )
@@ -44,7 +46,7 @@ data class ExamenListAdminScreen(val admin: Alumno) : Screen {
             if (isLoading) {
                 LoadingIndicator()
             } else if (examenes.isEmpty()) {
-                EmptyState(mensaje = "No hay exámenes.\nPresiona ＋ para crear uno.", emoji = "📝")
+                EmptyState(mensaje = "No hay exámenes.\nPresiona + para crear uno.", icon = Icons.Default.Assignment)
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),

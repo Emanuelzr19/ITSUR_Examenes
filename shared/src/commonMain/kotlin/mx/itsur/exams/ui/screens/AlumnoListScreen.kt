@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +36,7 @@ data class AlumnoListScreen(val admin: Alumno) : Screen {
         val isLoading by viewModel.isLoading.collectAsState()
         var showForm by remember { mutableStateOf(false) }
         var deleteId by remember { mutableStateOf<String?>(null) }
+        var editAlumno by remember { mutableStateOf<Alumno?>(null) }
 
         LaunchedEffect(Unit) { viewModel.loadAlumnos() }
 
@@ -44,7 +47,7 @@ data class AlumnoListScreen(val admin: Alumno) : Screen {
                 onBackClick = { navigator.pop() },
                 actions = {
                     IconButton(onClick = { showForm = true }) {
-                        Text("＋", color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                        Icon(Icons.Default.PersonAdd, contentDescription = "Agregar alumno", tint = Color.White)
                     }
                 }
             )
@@ -52,14 +55,18 @@ data class AlumnoListScreen(val admin: Alumno) : Screen {
             if (isLoading) {
                 LoadingIndicator()
             } else if (alumnos.isEmpty()) {
-                EmptyState(mensaje = "No hay alumnos registrados.\nPresiona ＋ para agregar.", emoji = "👨‍🎓")
+                EmptyState(mensaje = "No hay alumnos registrados.\nPresiona + para agregar.", icon = Icons.Default.School)
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(alumnos, key = { it.id }) { alumno ->
-                        AlumnoCard(alumno = alumno, onDelete = { deleteId = alumno.id })
+                        AlumnoCard(
+                            alumno = alumno,
+                            onDelete = { deleteId = alumno.id },
+                            onEdit = { editAlumno = alumno }
+                        )
                     }
                 }
             }
@@ -71,6 +78,17 @@ data class AlumnoListScreen(val admin: Alumno) : Screen {
                 onRegistrar = { a, pass ->
                     viewModel.registrar(a, pass)
                     showForm = false
+                }
+            )
+        }
+
+        editAlumno?.let { alumno ->
+            EditarAlumnoDialog(
+                alumno = alumno,
+                onDismiss = { editAlumno = null },
+                onGuardar = { updated ->
+                    viewModel.actualizar(updated)
+                    editAlumno = null
                 }
             )
         }
@@ -94,7 +112,7 @@ data class AlumnoListScreen(val admin: Alumno) : Screen {
 }
 
 @Composable
-fun AlumnoCard(alumno: Alumno, onDelete: () -> Unit) {
+fun AlumnoCard(alumno: Alumno, onDelete: () -> Unit, onEdit: () -> Unit = {}) {
     Card(
         shape = RoundedCornerShape(14.dp),
         elevation = CardDefaults.cardElevation(2.dp),
@@ -123,7 +141,12 @@ fun AlumnoCard(alumno: Alumno, onDelete: () -> Unit) {
                 Text(alumno.numeroControl, style = MaterialTheme.typography.bodyMedium, color = ITSURGrisMedio)
                 Text(alumno.grupo, style = MaterialTheme.typography.labelSmall, color = ITSURVerde)
             }
-            IconButton(onClick = onDelete) { Text("🗑", fontSize = 18.sp) }
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = ITSURVerde)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = ITSURError)
+            }
         }
     }
 }
@@ -151,6 +174,7 @@ fun RegistrarAlumnoDialog(onDismiss: () -> Unit, onRegistrar: (Alumno, String) -
         confirmButton = {
             ITSURButton(
                 text = "Registrar",
+                icon = Icons.Default.PersonAdd,
                 onClick = {
                     if (nombre.isNotBlank() && email.isNotBlank() && password.isNotBlank()) {
                         onRegistrar(
@@ -166,6 +190,41 @@ fun RegistrarAlumnoDialog(onDismiss: () -> Unit, onRegistrar: (Alumno, String) -
                             ),
                             password
                         )
+                    }
+                }
+            )
+        },
+        dismissButton = {
+            ITSURButton(text = "Cancelar", onClick = onDismiss, secondary = true)
+        }
+    )
+}
+
+@Composable
+fun EditarAlumnoDialog(alumno: Alumno, onDismiss: () -> Unit, onGuardar: (Alumno) -> Unit) {
+    var nombre by remember { mutableStateOf(alumno.nombre) }
+    var email by remember { mutableStateOf(alumno.email) }
+    var numeroControl by remember { mutableStateOf(alumno.numeroControl) }
+    var grupo by remember { mutableStateOf(alumno.grupo) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Alumno", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ITSURTextField(value = nombre, onValueChange = { nombre = it }, label = "Nombre completo")
+                ITSURTextField(value = email, onValueChange = { email = it }, label = "Correo institucional")
+                ITSURTextField(value = numeroControl, onValueChange = { numeroControl = it }, label = "Número de control")
+                ITSURTextField(value = grupo, onValueChange = { grupo = it }, label = "Grupo")
+            }
+        },
+        confirmButton = {
+            ITSURButton(
+                text = "Guardar",
+                icon = Icons.Default.Save,
+                onClick = {
+                    if (nombre.isNotBlank() && email.isNotBlank()) {
+                        onGuardar(alumno.copy(nombre = nombre, email = email, numeroControl = numeroControl, grupo = grupo))
                     }
                 }
             )

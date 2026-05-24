@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -47,7 +51,7 @@ fun ITSURHeader(
         ) {
             if (onBackClick != null) {
                 IconButton(onClick = onBackClick) {
-                    Text("←", color = Color.White, fontSize = 22.sp)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Regresar", tint = Color.White)
                 }
                 Spacer(Modifier.width(8.dp))
             }
@@ -139,7 +143,7 @@ fun ExamenCard(
                 }
                 if (onDelete != null) {
                     IconButton(onClick = onDelete) {
-                        Text("🗑", fontSize = 18.sp)
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = ITSURError)
                     }
                 }
             }
@@ -242,10 +246,10 @@ fun LoadingIndicator() {
 }
 
 @Composable
-fun EmptyState(mensaje: String, emoji: String = "📋") {
+fun EmptyState(mensaje: String, icon: ImageVector = Icons.Default.List) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(emoji, fontSize = 48.sp)
+            Icon(icon, contentDescription = null, tint = ITSURGrisMedio, modifier = Modifier.size(56.dp))
             Spacer(Modifier.height(12.dp))
             Text(mensaje, style = MaterialTheme.typography.bodyLarge, color = ITSURGrisMedio, textAlign = TextAlign.Center)
         }
@@ -258,7 +262,8 @@ fun ITSURButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    secondary: Boolean = false
+    secondary: Boolean = false,
+    icon: ImageVector? = null
 ) {
     if (secondary) {
         OutlinedButton(
@@ -269,6 +274,10 @@ fun ITSURButton(
             colors = ButtonDefaults.outlinedButtonColors(contentColor = ITSURVerde),
             border = androidx.compose.foundation.BorderStroke(1.5.dp, ITSURVerde)
         ) {
+            if (icon != null) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+            }
             Text(text, fontWeight = FontWeight.SemiBold)
         }
     } else {
@@ -283,6 +292,10 @@ fun ITSURButton(
                 disabledContainerColor = ITSURGrisClaro
             )
         ) {
+            if (icon != null) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+            }
             Text(text, fontWeight = FontWeight.SemiBold)
         }
     }
@@ -296,13 +309,22 @@ fun ITSURTextField(
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
     maxLines: Int = 1,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    onKeyEnter: (() -> Unit)? = null
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().then(
+            if (onKeyEnter != null) Modifier.onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
+                    onKeyEnter()
+                    true
+                } else false
+            } else Modifier
+        ),
         singleLine = singleLine,
         maxLines = maxLines,
         shape = RoundedCornerShape(12.dp),
@@ -314,9 +336,7 @@ fun ITSURTextField(
         visualTransformation = if (isPassword)
             PasswordVisualTransformation()
         else
-            VisualTransformation.None
+            VisualTransformation.None,
+        leadingIcon = leadingIcon
     )
 }
-
-
-

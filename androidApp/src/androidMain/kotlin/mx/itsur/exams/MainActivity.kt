@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ITSURTheme {
-                Navigator(screen = LoginScreen())
+                    Navigator(screen = LoginScreen())
             }
         }
     }

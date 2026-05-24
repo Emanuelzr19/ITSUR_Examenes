@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,21 +63,21 @@ data class DashboardAdminScreen(val admin: Alumno) : Screen {
                 AdminMenuCard(
                     titulo = "Gestión de Exámenes",
                     descripcion = "Crear, editar y eliminar exámenes",
-                    emoji = "📝",
+                    icon = Icons.Default.Assignment,
                     color = ITSURVerdeClaro,
                     onClick = { navigator.push(ExamenListAdminScreen(admin)) }
                 )
                 AdminMenuCard(
                     titulo = "Gestión de Alumnos",
                     descripcion = "Registrar y administrar alumnos",
-                    emoji = "👨‍🎓",
+                    icon = Icons.Default.School,
                     color = Color(0xFFE8F5E9),
                     onClick = { navigator.push(AlumnoListScreen(admin)) }
                 )
                 AdminMenuCard(
                     titulo = "Reportes y Calificaciones",
                     descripcion = "Ver resultados por examen o alumno",
-                    emoji = "📊",
+                    icon = Icons.Default.BarChart,
                     color = Color(0xFFF9FBE7),
                     onClick = { navigator.push(ReportesScreen(admin)) }
                 )
@@ -84,6 +87,8 @@ data class DashboardAdminScreen(val admin: Alumno) : Screen {
                     onClick = { navigator.replaceAll(LoginScreen()) },
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
+                    Icon(Icons.Default.Logout, contentDescription = null, tint = ITSURGrisMedio, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
                     Text("Cerrar sesión", color = ITSURGrisMedio)
                 }
             }
@@ -95,7 +100,7 @@ data class DashboardAdminScreen(val admin: Alumno) : Screen {
 fun AdminMenuCard(
     titulo: String,
     descripcion: String,
-    emoji: String,
+    icon: ImageVector,
     color: Color,
     onClick: () -> Unit
 ) {
@@ -116,14 +121,14 @@ fun AdminMenuCard(
                     .background(Color.White.copy(alpha = 0.7f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(emoji, fontSize = 28.sp)
+                Icon(icon, contentDescription = null, tint = ITSURVerdeOscuro, modifier = Modifier.size(30.dp))
             }
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(titulo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ITSURTexto)
                 Text(descripcion, style = MaterialTheme.typography.bodyMedium, color = ITSURGrisMedio)
             }
-            Text("→", fontSize = 20.sp, color = ITSURVerde, fontWeight = FontWeight.Bold)
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = ITSURVerde, modifier = Modifier.size(24.dp))
         }
     }
 }
