@@ -8,7 +8,7 @@ plugins {
 kotlin {
     androidTarget {
         compilations.all {
-            kotlinOptions { jvmTarget = "17" }
+            kotlinOptions { jvmTarget = "21" }
         }
     }
     sourceSets {
@@ -18,6 +18,7 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
             implementation(libs.voyager.navigator)
+            implementation(libs.androidx.core.ktx)
         }
     }
 }
@@ -36,7 +37,7 @@ android {
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
     buildTypes { getByName("release") { isMinifyEnabled = false } }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }

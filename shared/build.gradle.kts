@@ -23,6 +23,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.sqldelight.android.driver)
+            implementation(libs.androidx.core.ktx)
         }
 
         commonMain.dependencies {
